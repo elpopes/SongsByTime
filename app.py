@@ -1,10 +1,9 @@
 from flask import Flask, request, redirect, session, render_template, url_for
 import requests
-import os
 from config import SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET, FLASK_SECRET_KEY
 
 app = Flask(__name__)
-app.secret_key = FLASK_SECRET_KEY  # Use the secret key from config.py
+app.secret_key = FLASK_SECRET_KEY
 REDIRECT_URI = 'http://localhost:8888/callback'
 
 @app.route('/')
@@ -66,9 +65,8 @@ def search_songs():
     }
     query = f"market=US&type=track&limit=50&q=duration_ms:{min_duration_ms} TO {max_duration_ms}"
     response = requests.get(f"https://api.spotify.com/v1/search?{query}", headers=headers)
-    tracks = response.json()
-
-    return tracks
+    tracks = response.json().get('tracks', {}).get('items', [])
+    return render_template('results.html', tracks=tracks)
 
 if __name__ == '__main__':
     app.run(port=8888)
