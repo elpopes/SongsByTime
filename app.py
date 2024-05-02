@@ -1,10 +1,10 @@
 from flask import Flask, request, redirect, session, render_template, url_for
 import requests
 import os
-from config import SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET
+from config import SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET, FLASK_SECRET_KEY
 
 app = Flask(__name__)
-app.secret_key = 'your_secret_key'  # Needed for session management
+app.secret_key = FLASK_SECRET_KEY  # Use the secret key from config.py
 REDIRECT_URI = 'http://localhost:8888/callback'
 
 @app.route('/')
@@ -53,13 +53,11 @@ def search_songs():
         return "Access token is missing, please login again", 401
     access_token = session['access_token']
 
-    # Receive duration in minutes and seconds from user
     min_duration_minutes = request.args.get('min_duration_minutes', default=0, type=int)
     min_duration_seconds = request.args.get('min_duration_seconds', default=0, type=int)
     max_duration_minutes = request.args.get('max_duration_minutes', default=0, type=int)
     max_duration_seconds = request.args.get('max_duration_seconds', default=0, type=int)
 
-    # Convert durations to milliseconds
     min_duration_ms = (min_duration_minutes * 60 + min_duration_seconds) * 1000
     max_duration_ms = (max_duration_minutes * 60 + max_duration_seconds) * 1000
 
