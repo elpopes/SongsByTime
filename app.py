@@ -60,13 +60,47 @@ def search_songs():
     min_duration_ms = (min_duration_minutes * 60 + min_duration_seconds) * 1000
     max_duration_ms = (max_duration_minutes * 60 + max_duration_seconds) * 1000
 
+    market = 'US'
+    results_limit = 50
+
     headers = {
         'Authorization': f'Bearer {access_token}'
     }
-    query = f"market=US&type=track&limit=50&q=duration_ms:{min_duration_ms} TO {max_duration_ms}"
+    query = f"market={market}&type=track&limit={results_limit}&q=duration_ms:{min_duration_ms} TO {max_duration_ms}"
     response = requests.get(f"https://api.spotify.com/v1/search?{query}", headers=headers)
     tracks = response.json().get('tracks', {}).get('items', [])
+    next_url = response.json().get('tracks', {}).get('next', None)
+
+    while next_url:
+        additional_response = requests.get(next_url, headers=headers)
+        additional_tracks = additional_response.json().get('tracks', {}).get('items', [])
+        tracks.extend(additional_tracks)
+        next_url = additional_response.json().get('tracks', {}).get('next', None)
+
     return render_template('results.html', tracks=tracks)
+
+@app.route('/search_everything')
+def search_everything():
+    if 'access_token' not in session:
+        return "Access token is missing, please login again", 401
+    access_token = session['access_token']
+
+    headers = {'Authorization': f'Bearer {access_token}'}
+    query = "type=track&limit=50"
+    url = f"https://api.spotify.com/v1/search?{query}"
+    all_tracks = []
+
+    while url:
+        response = requests.get(url, headers=headers)
+        if response.status_code != 200:
+            break  # Stop if there's an error or no more data
+        data = response.json()
+        tracks = data.get('tracks', {}).get('items', [])
+        all_tracks.extend(tracks)
+        url = data.get('tracks', {}).get('next')  # Get the next URL for pagination
+
+    return render_template('results.html', tracks=all_tracks)
+
 
 if __name__ == '__main__':
     app.run(port=8888)
